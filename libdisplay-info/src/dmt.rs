@@ -9,6 +9,7 @@ use crate::ffi;
 #[derive(Debug, Copy, Clone, FFIFrom)]
 #[ffi(ffi::dmt::di_dmt_timing)]
 pub struct Timing {
+    #[get_with(ffi::get_id_from_dmt_timing)]
     pub dmt_id: u8,
     pub edid_std_id: u16,
     pub cvt_id: u32,

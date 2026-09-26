@@ -19,6 +19,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 [features]
 v0_2 = ["libdisplay-info-sys/v0_2"]
 v0_3 = ["libdisplay-info-sys/v0_3"]
+v0_4 = ["libdisplay-info-sys/v0_4"]
 
 [dependencies]
 libdisplay-info-sys = { version = "0.3.0", path = "../libdisplay-info-sys", features = ["auto"] }

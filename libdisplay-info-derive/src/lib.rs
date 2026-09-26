@@ -25,6 +25,7 @@ struct FFIStructField {
     cast_as: Option<Type>,
     optional: Option<Expr>,
     ptr_deref: bool,
+    get_with: Option<Path>,
     span: Span,
 }
 
@@ -33,7 +34,19 @@ struct FFIEnumVariant {
     discriminant: Option<Expr>,
 }
 
-#[proc_macro_derive(FFIFrom, attributes(ffi, cast_as, other, optional, ptr_deref, wrap))]
+/// - `#[ffi(path)]`: FFI type to convert from
+/// - `#[wrap]`: Generate a `{Name}Ref` wrapper around a pointer to the FFI type
+///
+/// - `#[cast_as(T)]`: Cast FFI field value to `T` before calling `From::from`
+/// - `#[optional(expr)]`: `None` when the FFI field value equals `expr`, `Some(T)` otherwise
+/// - `#[ptr_deref]`: `None` for null pointers, `Some(T)` containing dereferenced ptr otherwise
+/// - `#[get_with(fn)]`: Used to manually implement complex field getters
+///
+/// - `#[other]`: For catch-all enum variants
+#[proc_macro_derive(
+    FFIFrom,
+    attributes(ffi, cast_as, other, optional, ptr_deref, wrap, get_with)
+)]
 pub fn ffi_from_fn(input: TokenStream) -> TokenStream {
     let FFIFrom {
         path,
@@ -177,6 +190,10 @@ pub fn ffi_from_fn(input: TokenStream) -> TokenStream {
                         } else if let Some(cast_as) = field.cast_as.as_ref() {
                             quote! {
                                 #ty::from(value.#ident as #cast_as)
+                            }
+                        } else if let Some(get_with) = field.get_with {
+                            quote! {
+                                #get_with(&value)
                             }
                         } else {
                             quote! {
@@ -399,6 +416,15 @@ fn parse_ffi_struct_field(input: ParseStream) -> Result<FFIStructField> {
         None
     };
 
+    let get_with = attributes
+        .iter()
+        .find(|attr| attr.path().segments[0].ident == "get_with");
+    let get_with = if let Some(get_with) = get_with {
+        Some(get_with.parse_args::<Path>()?)
+    } else {
+        None
+    };
+
     input.parse::<Visibility>()?;
     let ident = input.parse::<Ident>()?;
     input.parse::<Token![:]>()?;
@@ -410,6 +436,7 @@ fn parse_ffi_struct_field(input: ParseStream) -> Result<FFIStructField> {
         cast_as,
         optional,
         ptr_deref,
+        get_with,
         span: input.span(),
     })
 }

@@ -89,6 +89,7 @@ pub enum VideoFormatSyncPolarity {
 #[derive(Debug, Copy, Clone, FFIFrom)]
 #[ffi(ffi::cta::di_cta_video_format)]
 pub struct VideoFormat {
+    #[get_with(ffi::get_vic_code_from_video_format)]
     pub vic: u8,
     pub h_active: i32,
     pub v_active: i32,
@@ -1456,6 +1457,7 @@ pub struct HdrDynamicMetadataBlock {
 #[derive(Debug, Copy, Clone, FFIFrom)]
 #[ffi(ffi::cta::di_cta_svd)]
 pub struct Svd {
+    #[get_with(ffi::get_vic_code_from_svd)]
     pub vic: u8,
     #[cfg(feature = "v0_3")]
     pub original_index: u8,

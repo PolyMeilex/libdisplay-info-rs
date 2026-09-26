@@ -3,14 +3,25 @@ macro_rules! auto_import {
         #[cfg_attr(docsrs, cfg(feature = "v0_1"))]
         #[cfg_attr(
             not(docsrs),
-            cfg(all(feature = "v0_1", not(feature = "v0_2"), not(feature = "v0_3")))
+            cfg(all(
+                feature = "v0_1",
+                not(feature = "v0_2"),
+                not(feature = "v0_3"),
+                not(feature = "v0_4")
+            ))
         )]
         pub use crate::v0_1::$mod_name::*;
         #[cfg_attr(docsrs, cfg(feature = "v0_2"))]
-        #[cfg_attr(not(docsrs), cfg(all(feature = "v0_2", not(feature = "v0_3"))))]
+        #[cfg_attr(
+            not(docsrs),
+            cfg(all(feature = "v0_2", not(feature = "v0_3"), not(feature = "v0_4")))
+        )]
         pub use crate::v0_2::$mod_name::*;
-        #[cfg(feature = "v0_3")]
+        #[cfg_attr(docsrs, cfg(feature = "v0_3"))]
+        #[cfg_attr(not(docsrs), cfg(all(feature = "v0_3", not(feature = "v0_4"))))]
         pub use crate::v0_3::$mod_name::*;
+        #[cfg(feature = "v0_4")]
+        pub use crate::v0_4::$mod_name::*;
     };
 }
 

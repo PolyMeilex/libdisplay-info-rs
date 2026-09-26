@@ -6,16 +6,28 @@
 #[cfg_attr(docsrs, cfg(feature = "v0_1"))]
 #[cfg_attr(
     not(docsrs),
-    cfg(all(feature = "v0_1", not(feature = "v0_2"), not(feature = "v0_3")))
+    cfg(all(
+        feature = "v0_1",
+        not(feature = "v0_2"),
+        not(feature = "v0_3"),
+        not(feature = "v0_4")
+    ))
 )]
 pub mod v0_1;
 
 #[cfg_attr(docsrs, cfg(feature = "v0_2"))]
-#[cfg_attr(not(docsrs), cfg(all(feature = "v0_2", not(feature = "v0_3"))))]
+#[cfg_attr(
+    not(docsrs),
+    cfg(all(feature = "v0_2", not(feature = "v0_3"), not(feature = "v0_4")))
+)]
 pub mod v0_2;
 
-#[cfg(feature = "v0_3")]
+#[cfg_attr(docsrs, cfg(feature = "v0_3"))]
+#[cfg_attr(not(docsrs), cfg(all(feature = "v0_3", not(feature = "v0_4"))))]
 pub mod v0_3;
+
+#[cfg(feature = "v0_4")]
+pub mod v0_4;
 
 #[cfg(feature = "auto")]
 pub mod auto;

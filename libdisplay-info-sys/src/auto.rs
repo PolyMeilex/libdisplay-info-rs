@@ -1,3 +1,5 @@
+#![allow(clippy::missing_safety_doc)]
+
 macro_rules! auto_import {
     ($mod_name:ident) => {
         #[cfg_attr(docsrs, cfg(feature = "v0_1"))]
@@ -36,9 +38,9 @@ macro_rules! auto_mod {
 pub mod cta {
     auto_import!(cta);
 
-    #[cfg(feature = "v0_3")]
+    #[cfg(any(feature = "v0_3", feature = "v0_4"))]
     pub use polyfills::*;
-    #[cfg(feature = "v0_3")]
+    #[cfg(any(feature = "v0_3", feature = "v0_4"))]
     mod polyfills {
         use super::*;
 
@@ -264,14 +266,113 @@ pub mod cta {
 
         pub type di_cta_room_configuration = di_cta_room_configuration_block;
     }
+
+    #[cfg(feature = "v0_4")]
+    pub use polyfills_v0_4::*;
+    #[cfg(feature = "v0_4")]
+    mod polyfills_v0_4 {
+        use super::*;
+
+        // - CTA VIC-related symbols have been renamed and moved to a new
+        //   <libdisplay-info/cta-vic.h> header away from <libdisplay-info/cta.h>
+        // - VIC codes are now wrapped in a struct di_cta_vic instead of plain uint8_t
+        //   in di_cta_svd.vic, di_cta_vendor_hdmi_block.vics and di_cta_svr.vic
+
+        pub type di_cta_video_format = di_cta_vic_video_format;
+        pub type di_cta_hdmi_video_format = di_hdmi_vic_video_format;
+        pub type di_cta_video_format_sync_polarity = di_cta_vic_video_format_sync_polarity;
+        pub type di_cta_video_format_picture_aspect_ratio =
+            di_cta_vic_video_format_picture_aspect_ratio;
+        pub const di_cta_video_format_picture_aspect_ratio_DI_CTA_VIDEO_FORMAT_PICTURE_ASPECT_RATIO_4_3: di_cta_video_format_picture_aspect_ratio = di_cta_vic_video_format_picture_aspect_ratio_DI_CTA_VIC_VIDEO_FORMAT_PICTURE_ASPECT_RATIO_4_3;
+
+        pub const di_cta_video_format_picture_aspect_ratio_DI_CTA_VIDEO_FORMAT_PICTURE_ASPECT_RATIO_16_9: di_cta_video_format_picture_aspect_ratio = di_cta_vic_video_format_picture_aspect_ratio_DI_CTA_VIC_VIDEO_FORMAT_PICTURE_ASPECT_RATIO_16_9;
+
+        pub const di_cta_video_format_picture_aspect_ratio_DI_CTA_VIDEO_FORMAT_PICTURE_ASPECT_RATIO_64_27: di_cta_video_format_picture_aspect_ratio = di_cta_vic_video_format_picture_aspect_ratio_DI_CTA_VIC_VIDEO_FORMAT_PICTURE_ASPECT_RATIO_64_27;
+
+        pub const di_cta_video_format_picture_aspect_ratio_DI_CTA_VIDEO_FORMAT_PICTURE_ASPECT_RATIO_256_135: di_cta_video_format_picture_aspect_ratio = di_cta_vic_video_format_picture_aspect_ratio_DI_CTA_VIC_VIDEO_FORMAT_PICTURE_ASPECT_RATIO_256_135;
+
+        pub const di_cta_video_format_sync_polarity_DI_CTA_VIDEO_FORMAT_SYNC_NEGATIVE:
+            di_cta_video_format_sync_polarity =
+            di_cta_vic_video_format_sync_polarity_DI_CTA_VIC_VIDEO_FORMAT_SYNC_NEGATIVE;
+
+        pub const di_cta_video_format_sync_polarity_DI_CTA_VIDEO_FORMAT_SYNC_POSITIVE:
+            di_cta_video_format_sync_polarity =
+            di_cta_vic_video_format_sync_polarity_DI_CTA_VIC_VIDEO_FORMAT_SYNC_POSITIVE;
+
+        pub unsafe fn di_cta_video_format_from_vic(code: u8) -> *const di_cta_video_format {
+            di_cta_vic_video_format_from_vic(di_cta_vic { code })
+        }
+
+        pub unsafe fn di_cta_video_format_to_vic(format: *const di_cta_video_format) -> u8 {
+            di_cta_vic_video_format_to_vic(format).code
+        }
+
+        pub unsafe fn di_cta_hdmi_video_format_from_hdmi_vic(
+            code: u8,
+        ) -> *const di_cta_hdmi_video_format {
+            di_hdmi_vic_video_format_from_vic(di_hdmi_vic { code })
+        }
+    }
 }
 auto_mod!(cvt);
 auto_mod!(displayid);
 pub mod displayid2 {
     #[cfg(feature = "v0_3")]
     pub use crate::v0_3::displayid2::*;
+    #[cfg(feature = "v0_4")]
+    pub use crate::v0_4::displayid2::*;
 }
 auto_mod!(dmt);
-auto_mod!(edid);
+pub mod edid {
+    auto_import!(edid);
+
+    #[cfg(feature = "v0_4")]
+    pub use polyfills_v0_4::*;
+
+    #[cfg(feature = "v0_4")]
+    mod polyfills_v0_4 {
+        use super::*;
+
+        pub unsafe fn di_edid_standard_timing_get_dmt(
+            t: *const di_edid_standard_timing,
+        ) -> *const crate::v0_4::dmt::di_dmt_timing {
+            // SAFETY: The ptr cast is backed by this comment in libdisplay:
+            // https://gitlab.freedesktop.org/emersion/libdisplay-info/-/blob/62a9346c3dce2bddba1d4dc186949e4320d6f801/include/libdisplay-info/dmt.h#L66
+            crate::v0_4::dmt::di_dmt_timing_from_edid_standard_timing(
+                t as *const crate::v0_4::dmt::di_edid_standard_timing,
+            )
+        }
+    }
+}
 auto_mod!(gtf);
 auto_mod!(info);
+
+#[cfg(not(feature = "v0_4"))]
+pub fn get_vic_code_from_svd(svd: &cta::di_cta_svd) -> u8 {
+    svd.vic
+}
+
+#[cfg(feature = "v0_4")]
+pub fn get_vic_code_from_svd(svd: &cta::di_cta_svd) -> u8 {
+    svd.vic.code
+}
+
+#[cfg(not(feature = "v0_4"))]
+pub fn get_vic_code_from_video_format(format: &cta::di_cta_video_format) -> u8 {
+    format.vic
+}
+
+#[cfg(feature = "v0_4")]
+pub fn get_vic_code_from_video_format(format: &cta::di_cta_video_format) -> u8 {
+    format.vic.code
+}
+
+#[cfg(not(feature = "v0_4"))]
+pub fn get_id_from_dmt_timing(timing: &dmt::di_dmt_timing) -> u8 {
+    timing.dmt_id
+}
+
+#[cfg(feature = "v0_4")]
+pub fn get_id_from_dmt_timing(timing: &dmt::di_dmt_timing) -> u8 {
+    timing.dmt_code.code
+}

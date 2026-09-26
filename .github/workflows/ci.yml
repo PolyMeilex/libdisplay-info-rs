@@ -139,3 +139,38 @@ jobs:
           key: ${{ runner.os }}-build-rust_stable-feature_${{ matrix.features }}-${{ hashFiles('**/Cargo.toml') }}
       - name: Test features
         run: cargo test --no-default-features --features "${{ matrix.features }}"
+
+  libdisplay-info-tags:
+      name: libdisplay-info ${{ matrix.tag }}
+      runs-on: ubuntu-24.04
+      strategy:
+        fail-fast: false
+        matrix:
+          # 0.1.0 skipped since it does not have pkg-config, 0.1.1 adds it
+          tag: ["0.1.1", "0.2.0", "0.3.0"] # "0.4.0"
+      steps:
+        - name: Checkout sources
+          uses: actions/checkout@v4
+        - name: Rust toolchain
+          uses: dtolnay/rust-toolchain@stable
+
+        - name: Install build dependencies
+          run: |
+            sudo apt-get update
+            sudo apt-get install -y gcc pkg-config hwdata python3-pip ninja-build meson
+
+        - name: Build and install ${{ matrix.tag }}
+          run: |
+            SRC="$RUNNER_TEMP/libdisplay-info"
+            INSTALL_DIR="$RUNNER_TEMP/libdisplay-info-install"
+            git clone --depth 1 --branch "${{ matrix.tag }}" https://gitlab.freedesktop.org/emersion/libdisplay-info.git "$SRC"
+
+            meson setup "$SRC/build" "$SRC" --prefix="$INSTALL_DIR" --libdir=lib --buildtype=release
+            meson compile -C "$SRC/build"
+            meson install -C "$SRC/build"
+
+            echo "PKG_CONFIG_PATH=$INSTALL_DIR/lib/pkgconfig" >> "$GITHUB_ENV"
+            echo "LD_LIBRARY_PATH=$INSTALL_DIR/lib" >> "$GITHUB_ENV"
+
+        - name: Test libdisplay-info
+          run: cargo test --workspace
